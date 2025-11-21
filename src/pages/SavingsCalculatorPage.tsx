@@ -22,9 +22,15 @@ export function SavingsCalculatorPage() {
   });
 
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [targetAmount, setTargetAmount] = useState<string>('');
 
   const handleProductClick = (productId: string) => {
     setSelectedProductId(productId === selectedProductId ? null : productId);
+  };
+
+  const handleTargetAmountChange = (value: string) => {
+    const numericValue = value.replace(/[^0-9]/g, '');
+    setTargetAmount(numericValue);
   };
 
   return (
@@ -33,7 +39,13 @@ export function SavingsCalculatorPage() {
 
       <Spacing size={16} />
 
-      <TextField label="목표 금액" placeholder="목표 금액을 입력하세요" suffix="원" />
+      <TextField
+        label="목표 금액"
+        placeholder="목표 금액을 입력하세요"
+        suffix="원"
+        value={targetAmount}
+        onChange={e => handleTargetAmountChange(e.target.value)}
+      />
       <Spacing size={16} />
       <TextField label="월 납입액" placeholder="희망 월 납입액을 입력하세요" suffix="원" />
       <Spacing size={16} />

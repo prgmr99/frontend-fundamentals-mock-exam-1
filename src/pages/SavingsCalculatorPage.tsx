@@ -23,6 +23,7 @@ export function SavingsCalculatorPage() {
 
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [targetAmount, setTargetAmount] = useState<string>('');
+  const [monthlyAmount, setMonthlyAmount] = useState<string>('');
 
   const handleProductClick = (productId: string) => {
     setSelectedProductId(productId === selectedProductId ? null : productId);
@@ -31,6 +32,11 @@ export function SavingsCalculatorPage() {
   const handleTargetAmountChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '');
     setTargetAmount(numericValue);
+  };
+
+  const handleMonthlyAmountChange = (value: string) => {
+    const numericValue = value.replace(/[^0-9]/g, '');
+    setMonthlyAmount(numericValue);
   };
 
   return (
@@ -47,7 +53,13 @@ export function SavingsCalculatorPage() {
         onChange={e => handleTargetAmountChange(e.target.value)}
       />
       <Spacing size={16} />
-      <TextField label="월 납입액" placeholder="희망 월 납입액을 입력하세요" suffix="원" />
+      <TextField
+        label="월 납입액"
+        placeholder="희망 월 납입액을 입력하세요"
+        suffix="원"
+        value={monthlyAmount}
+        onChange={e => handleMonthlyAmountChange(e.target.value)}
+      />
       <Spacing size={16} />
       <SelectBottomSheet label="저축 기간" title="저축 기간을 선택해주세요" value={12} onChange={() => {}}>
         <SelectBottomSheet.Option value={6}>6개월</SelectBottomSheet.Option>

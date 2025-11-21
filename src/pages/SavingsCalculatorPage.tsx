@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { savingsApi, SavingsProduct } from 'api/savingsApi';
+import { savingsApi } from 'api/savingsApi';
+import { filterProducts } from 'domain/savings/filters';
 import { useState } from 'react';
 import {
   Assets,
@@ -13,6 +14,7 @@ import {
   Tab,
   TextField,
 } from 'tosslib';
+import { SavingsProduct } from 'types/savings';
 import { formatNumber } from 'utils/formatNumbers';
 
 export function SavingsCalculatorPage() {
@@ -43,6 +45,12 @@ export function SavingsCalculatorPage() {
   const handleSavingPeriodChange = (value: number) => {
     setSavingPeriod(value);
   };
+
+  const filteredProducts = filterProducts(savingProducts, {
+    targetAmount: targetAmount ? parseInt(targetAmount, 10) : 0,
+    monthlyAmount: monthlyAmount ? parseInt(monthlyAmount, 10) : 0,
+    savingPeriod,
+  });
 
   return (
     <>
@@ -90,24 +98,28 @@ export function SavingsCalculatorPage() {
         </Tab.Item>
       </Tab>
 
-      {savingProducts.map((product: SavingsProduct) => (
-        <ListRow
-          key={product.id}
-          contents={
-            <ListRow.Texts
-              type="3RowTypeA"
-              top={product.name}
-              topProps={{ fontSize: 16, fontWeight: 'bold', color: colors.grey900 }}
-              middle={`연 이자율: ${product.annualRate}%`}
-              middleProps={{ fontSize: 14, color: colors.blue600, fontWeight: 'medium' }}
-              bottom={`${formatNumber(product.minMonthlyAmount)}원 ~ ${formatNumber(product.maxMonthlyAmount)}원 | ${product.availableTerms}개월`}
-              bottomProps={{ fontSize: 13, color: colors.grey600 }}
-            />
-          }
-          right={selectedProductId === product.id ? <Assets.Icon name="icon-check-circle-green" /> : undefined}
-          onClick={() => handleProductClick(product.id)}
-        />
-      ))}
+      {filteredProducts.length === 0 ? (
+        <ListRow contents={<ListRow.Texts type="1RowTypeA" top="조건에 맞는 상품이 없습니다." />} />
+      ) : (
+        filteredProducts.map((product: SavingsProduct) => (
+          <ListRow
+            key={product.id}
+            contents={
+              <ListRow.Texts
+                type="3RowTypeA"
+                top={product.name}
+                topProps={{ fontSize: 16, fontWeight: 'bold', color: colors.grey900 }}
+                middle={`연 이자율: ${product.annualRate}%`}
+                middleProps={{ fontSize: 14, color: colors.blue600, fontWeight: 'medium' }}
+                bottom={`${formatNumber(product.minMonthlyAmount)}원 ~ ${formatNumber(product.maxMonthlyAmount)}원 | ${product.availableTerms}개월`}
+                bottomProps={{ fontSize: 13, color: colors.grey600 }}
+              />
+            }
+            right={selectedProductId === product.id ? <Assets.Icon name="icon-check-circle-green" /> : undefined}
+            onClick={() => handleProductClick(product.id)}
+          />
+        ))
+      )}
 
       {/* 아래는 계산 결과 탭 내용이에요. 계산 결과 탭을 구현할 때 주석을 해제해주세요. */}
       {/* <Spacing size={8} />

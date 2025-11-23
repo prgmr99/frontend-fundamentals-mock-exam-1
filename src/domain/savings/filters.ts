@@ -29,3 +29,7 @@ export const filterProducts = (
   const composedFilter = composeFilters(...filters);
   return products.filter(product => composedFilter(product, goal));
 };
+
+export const getRecommendedProducts = (products: SavingsProduct[], count: number = 2): SavingsProduct[] => {
+  return [...products].sort((a, b) => b.annualRate - a.annualRate).slice(0, count);
+};

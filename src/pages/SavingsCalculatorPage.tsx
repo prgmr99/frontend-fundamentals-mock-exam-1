@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { savingsApi } from 'api/savingsApi';
-import { filterProducts } from 'domain/savings/filters';
+import { calculateSavingsResult } from 'domain/savings/caculator';
+import { filterProducts, getRecommendedProducts } from 'domain/savings/filters';
 import { useMemo, useState } from 'react';
 import {
   Assets,
@@ -56,15 +57,19 @@ export function SavingsCalculatorPage() {
   };
 
   // === 필터링 로직 ===
-  const filteredProducts = filterProducts(savingProducts, {
-    targetAmount: targetAmount ? parseInt(targetAmount, 10) : 0,
-    monthlyAmount: monthlyAmount ? parseInt(monthlyAmount, 10) : 0,
-    savingPeriod,
-  });
+  const filteredProducts = useMemo(
+    () =>
+      filterProducts(savingProducts, {
+        targetAmount: targetAmount ? parseInt(targetAmount, 10) : 0,
+        monthlyAmount: monthlyAmount ? parseInt(monthlyAmount, 10) : 0,
+        savingPeriod,
+      }),
+    [savingProducts, targetAmount, monthlyAmount, savingPeriod]
+  );
 
-  // === 추천 상품 (연 이자율 높은 순 상위 2개) ===
+  // === 추천 상품 ===
   const recommendedProducts = useMemo(() => {
-    return [...filteredProducts].sort((a, b) => b.annualRate - a.annualRate).slice(0, 2);
+    return getRecommendedProducts(filteredProducts, 2);
   }, [filteredProducts]);
 
   // === 선택한 상품 찾기 ===
@@ -74,26 +79,18 @@ export function SavingsCalculatorPage() {
 
   // === 계산 결과 ===
   const calculatedResults = useMemo(() => {
-    if (!selectedProduct) {
+    if (!selectedProduct || !monthlyAmount) {
       return null;
     }
 
-    const monthlyAmountNum = monthlyAmount ? parseInt(monthlyAmount, 10) : 0;
-    const targetAmountNum = targetAmount ? parseInt(targetAmount, 10) : 0;
-    const rate = selectedProduct.annualRate / 100;
-
-    const finalAmount = monthlyAmountNum * savingPeriod * (1 + rate * 0.5);
-
-    const goalDifference = finalAmount - targetAmountNum;
-
-    const recommendedMonthly = targetAmountNum / (savingPeriod * (1 + rate * 0.5));
-    const recommendedMonthlyAmount = Math.round(recommendedMonthly / 1000) * 1000;
-
-    return {
-      finalAmount,
-      goalDifference,
-      recommendedMonthlyAmount,
-    };
+    return calculateSavingsResult(
+      {
+        targetAmount: targetAmount ? parseInt(targetAmount, 10) : 0,
+        monthlyAmount: parseInt(monthlyAmount, 10),
+        savingPeriod,
+      },
+      selectedProduct
+    );
   }, [selectedProduct, monthlyAmount, targetAmount, savingPeriod]);
 
   return (

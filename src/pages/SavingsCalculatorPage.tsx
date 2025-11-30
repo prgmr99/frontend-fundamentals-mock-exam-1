@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { savingsApi } from 'api/savingsApi';
-import { calculateSavingsResult } from 'domain/savings/caculator';
-import { filterProducts, getRecommendedProducts } from 'domain/savings/filters';
+import { calculateSavingsResult } from 'domain/savings/logics/calculator';
+import { filterProducts, getRecommendedProducts } from 'domain/savings/logics/filters';
 import { useMemo, useState } from 'react';
 import {
   Assets,
@@ -20,6 +20,21 @@ import { formatNumber } from 'utils/formatNumbers';
 
 type TabValue = 'products' | 'results';
 
+/**
+ * view(적금 상태 / 계산 결과) 상태 관리 훅
+ *
+ * why:
+ * * 1. Tab 컴포넌트와 연동되는 상태를 별도의 훅으로 분리하여 관리
+ * * 2. 관리 방식이 지금은 메모리로 관리하지만, 다양한 방식으로 변경이 가능하기 때문에 확장성 고려
+ *
+ * @returns view: 현재 탭 값, setView: 탭 값 변경 함수
+ */
+const useView = () => {
+  const [view, setView] = useState<TabValue>('products');
+
+  return [view, setView] as const;
+};
+
 export function SavingsCalculatorPage() {
   const { data: savingProducts = [] } = useQuery({
     queryKey: ['savingProducts'],
@@ -27,7 +42,8 @@ export function SavingsCalculatorPage() {
   });
 
   // === UI 상태 ===
-  const [selectedTab, setSelectedTab] = useState<TabValue>('products');
+  const [view, setView] = useView();
+
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [targetAmount, setTargetAmount] = useState<string>('');
   const [monthlyAmount, setMonthlyAmount] = useState<string>('');
@@ -50,10 +66,6 @@ export function SavingsCalculatorPage() {
 
   const handleSavingPeriodChange = (value: number) => {
     setSavingPeriod(value);
-  };
-
-  const handleTabChange = (value: TabValue) => {
-    setSelectedTab(value);
   };
 
   // === 필터링 로직 ===
@@ -130,17 +142,17 @@ export function SavingsCalculatorPage() {
       <Border height={16} />
       <Spacing size={8} />
 
-      <Tab onChange={value => handleTabChange(value as TabValue)}>
-        <Tab.Item value="products" selected={selectedTab === 'products'}>
+      <Tab onChange={value => setView(value as TabValue)}>
+        <Tab.Item value="products" selected={view === 'products'}>
           적금 상품
         </Tab.Item>
-        <Tab.Item value="results" selected={selectedTab === 'results'}>
+        <Tab.Item value="results" selected={view === 'results'}>
           계산 결과
         </Tab.Item>
       </Tab>
 
       {/* === 적금 상품 탭 === */}
-      {selectedTab === 'products' && (
+      {view === 'products' && (
         <>
           {filteredProducts.length === 0 ? (
             <ListRow contents={<ListRow.Texts type="1RowTypeA" top="조건에 맞는 상품이 없습니다." />} />
@@ -168,7 +180,7 @@ export function SavingsCalculatorPage() {
       )}
 
       {/* === 계산 결과 탭 === */}
-      {selectedTab === 'results' &&
+      {view === 'results' &&
         (selectedProductId ? (
           <>
             <Spacing size={8} />

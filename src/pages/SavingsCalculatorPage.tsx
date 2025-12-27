@@ -1,10 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { savingsApi } from 'api/savingsApi';
-import { calculateSavingsResult } from 'domain/savings/logics/calculator';
-import { filterProducts, getRecommendedProducts } from 'domain/savings/logics/filters';
-import { useMemo, useState } from 'react';
+import ProductsList from 'domain/savings/components/ProductsList';
+import { Suspense, useState } from 'react';
 import {
-  Assets,
   Border,
   colors,
   ListHeader,
@@ -16,7 +12,7 @@ import {
   TextField,
 } from 'tosslib';
 import { SavingsProduct } from 'types/savings';
-import { formatNumber } from 'utils/formatNumbers';
+import { formatKrNumber } from 'utils/formatKrNumbers';
 
 type TabValue = 'products' | 'results';
 
@@ -35,75 +31,42 @@ const useView = () => {
   return [view, setView] as const;
 };
 
-export function SavingsCalculatorPage() {
-  const { data: savingProducts = [] } = useQuery({
-    queryKey: ['savingProducts'],
-    queryFn: savingsApi.getProducts,
+const useSavingStates = () => {
+  const [filters, setFilters] = useState({
+    targetAmount: '',
+    monthlyAmount: '',
+    savingTerm: 12,
   });
 
+  return [filters, setFilters] as const;
+};
+
+function filteredByAmount(product: SavingsProduct, amount: number) {
+  return amount >= product.minMonthlyAmount && amount <= product.maxMonthlyAmount;
+}
+
+function filteredByTerm(product: SavingsProduct, term: number) {
+  return product.availableTerms === term;
+}
+
+export function SavingsCalculatorPage() {
   // === UI 상태 ===
   const [view, setView] = useView();
-
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [targetAmount, setTargetAmount] = useState<string>('');
-  const [monthlyAmount, setMonthlyAmount] = useState<string>('');
-  const [savingPeriod, setSavingPeriod] = useState<number>(12);
-
-  // === 이벤트 핸들러 ===
-  const handleProductClick = (productId: string) => {
-    setSelectedProductId(productId === selectedProductId ? null : productId);
-  };
+  const [{ targetAmount, monthlyAmount, savingTerm }, setSavingStates] = useSavingStates();
 
   const handleTargetAmountChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '');
-    setTargetAmount(numericValue);
+    setSavingStates(prev => ({ ...prev, targetAmount: numericValue }));
   };
 
   const handleMonthlyAmountChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '');
-    setMonthlyAmount(numericValue);
+    setSavingStates(prev => ({ ...prev, monthlyAmount: numericValue }));
   };
 
-  const handleSavingPeriodChange = (value: number) => {
-    setSavingPeriod(value);
+  const handleSavingTermChange = (value: number) => {
+    setSavingStates(prev => ({ ...prev, savingTerm: value }));
   };
-
-  // === 필터링 로직 ===
-  const filteredProducts = useMemo(
-    () =>
-      filterProducts(savingProducts, {
-        targetAmount: targetAmount ? parseInt(targetAmount, 10) : 0,
-        monthlyAmount: monthlyAmount ? parseInt(monthlyAmount, 10) : 0,
-        savingPeriod,
-      }),
-    [savingProducts, targetAmount, monthlyAmount, savingPeriod]
-  );
-
-  // === 추천 상품 ===
-  const recommendedProducts = useMemo(() => {
-    return getRecommendedProducts(filteredProducts, 2);
-  }, [filteredProducts]);
-
-  // === 선택한 상품 찾기 ===
-  const selectedProduct = useMemo(() => {
-    return savingProducts.find(p => p.id === selectedProductId);
-  }, [savingProducts, selectedProductId]);
-
-  // === 계산 결과 ===
-  const calculatedResults = useMemo(() => {
-    if (!selectedProduct || !monthlyAmount) {
-      return null;
-    }
-
-    return calculateSavingsResult(
-      {
-        targetAmount: targetAmount ? parseInt(targetAmount, 10) : 0,
-        monthlyAmount: parseInt(monthlyAmount, 10),
-        savingPeriod,
-      },
-      selectedProduct
-    );
-  }, [selectedProduct, monthlyAmount, targetAmount, savingPeriod]);
 
   return (
     <>
@@ -130,8 +93,8 @@ export function SavingsCalculatorPage() {
       <SelectBottomSheet
         label="저축 기간"
         title="저축 기간을 선택해주세요"
-        value={savingPeriod}
-        onChange={handleSavingPeriodChange}
+        value={savingTerm}
+        onChange={value => handleSavingTermChange(Number(value))}
       >
         <SelectBottomSheet.Option value={6}>6개월</SelectBottomSheet.Option>
         <SelectBottomSheet.Option value={12}>12개월</SelectBottomSheet.Option>
@@ -152,32 +115,13 @@ export function SavingsCalculatorPage() {
       </Tab>
 
       {/* === 적금 상품 탭 === */}
-      {view === 'products' && (
-        <>
-          {filteredProducts.length === 0 ? (
-            <ListRow contents={<ListRow.Texts type="1RowTypeA" top="조건에 맞는 상품이 없습니다." />} />
-          ) : (
-            filteredProducts.map((product: SavingsProduct) => (
-              <ListRow
-                key={product.id}
-                contents={
-                  <ListRow.Texts
-                    type="3RowTypeA"
-                    top={product.name}
-                    topProps={{ fontSize: 16, fontWeight: 'bold', color: colors.grey900 }}
-                    middle={`연 이자율: ${product.annualRate}%`}
-                    middleProps={{ fontSize: 14, color: colors.blue600, fontWeight: 'medium' }}
-                    bottom={`${formatNumber(product.minMonthlyAmount)}원 ~ ${formatNumber(product.maxMonthlyAmount)}원 | ${product.availableTerms}개월`}
-                    bottomProps={{ fontSize: 13, color: colors.grey600 }}
-                  />
-                }
-                right={selectedProductId === product.id ? <Assets.Icon name="icon-check-circle-green" /> : undefined}
-                onClick={() => handleProductClick(product.id)}
-              />
-            ))
-          )}
-        </>
-      )}
+      {view === 'products' ? (
+        <Suspense fallback={<ProductsList.Loading />}>
+          <ProductsList
+            filters={[x => filteredByAmount(x, Number(monthlyAmount)), x => filteredByTerm(x, savingTerm)]}
+          />
+        </Suspense>
+      ) : null}
 
       {/* === 계산 결과 탭 === */}
       {view === 'results' &&
@@ -191,7 +135,7 @@ export function SavingsCalculatorPage() {
                   type="2RowTypeA"
                   top="예상 수익 금액"
                   topProps={{ color: colors.grey600 }}
-                  bottom={`${calculatedResults ? formatNumber(Math.floor(calculatedResults.finalAmount)) : 0}원`}
+                  bottom={`${calculatedResults ? formatKrNumber(Math.floor(calculatedResults.finalAmount)) : 0}원`}
                   bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
                 />
               }
@@ -202,7 +146,7 @@ export function SavingsCalculatorPage() {
                   type="2RowTypeA"
                   top="목표 금액과의 차이"
                   topProps={{ color: colors.grey600 }}
-                  bottom={`${calculatedResults ? formatNumber(Math.floor(calculatedResults.goalDifference)) : 0}원`}
+                  bottom={`${calculatedResults ? formatKrNumber(Math.floor(calculatedResults.goalDifference)) : 0}원`}
                   bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
                 />
               }
@@ -213,7 +157,7 @@ export function SavingsCalculatorPage() {
                   type="2RowTypeA"
                   top="추천 월 납입 금액"
                   topProps={{ color: colors.grey600 }}
-                  bottom={`${calculatedResults ? formatNumber(calculatedResults.recommendedMonthlyAmount) : 0}원`}
+                  bottom={`${calculatedResults ? formatKrNumber(calculatedResults.recommendedMonthlyAmount) : 0}원`}
                   bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
                 />
               }
@@ -228,28 +172,13 @@ export function SavingsCalculatorPage() {
             />
             <Spacing size={12} />
 
-            {recommendedProducts.length === 0 ? (
-              <ListRow contents={<ListRow.Texts type="1RowTypeA" top="추천 가능한 상품이 없습니다." />} />
-            ) : (
-              recommendedProducts.map((product: SavingsProduct) => (
-                <ListRow
-                  key={product.id}
-                  contents={
-                    <ListRow.Texts
-                      type="3RowTypeA"
-                      top={product.name}
-                      topProps={{ fontSize: 16, fontWeight: 'bold', color: colors.grey900 }}
-                      middle={`연 이자율: ${product.annualRate}%`}
-                      middleProps={{ fontSize: 14, color: colors.blue600, fontWeight: 'medium' }}
-                      bottom={`${formatNumber(product.minMonthlyAmount)}원 ~ ${formatNumber(product.maxMonthlyAmount)}원 | ${product.availableTerms}개월`}
-                      bottomProps={{ fontSize: 13, color: colors.grey600 }}
-                    />
-                  }
-                  right={selectedProductId === product.id ? <Assets.Icon name="icon-check-circle-green" /> : undefined}
-                  onClick={() => handleProductClick(product.id)}
-                />
-              ))
-            )}
+            <Suspense fallback={<ProductsList.Loading />}>
+              <ProductsList
+                filters={[x => filteredByAmount(x, Number(monthlyAmount)), x => filteredByTerm(x, savingTerm)]}
+                orderBy={}
+                limit={2}
+              />
+            </Suspense>
 
             <Spacing size={40} />
           </>

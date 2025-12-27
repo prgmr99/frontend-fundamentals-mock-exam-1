@@ -18,3 +18,6 @@ export interface SavingsGoal {
   monthlyAmount: number;
   savingPeriod: number;
 }
+
+export type FilteredSavingProducts = (product: SavingsProduct) => boolean;
+export type OrderBySavingProducts = (a: SavingsProduct, b: SavingsProduct) => number;

@@ -1,3 +1,4 @@
+import { noop } from '@tanstack/react-query';
 import { AmountInput } from 'components/AmountInput';
 import ProductsList from 'domain/savings/components/ProductsList';
 import { Suspense, useState } from 'react';
@@ -69,16 +70,11 @@ export function SavingsCalculatorPage() {
         onChange={value => setSavingStates({ monthlyAmount: value })}
       />
       <Spacing size={16} />
-      <SelectBottomSheet
+      <SavingTermSelect
         label="저축 기간"
-        title="저축 기간을 선택해주세요"
         value={savingTerm}
-        onChange={value => setSavingStates({ savingTerm: Number(value) })}
-      >
-        <SelectBottomSheet.Option value={6}>6개월</SelectBottomSheet.Option>
-        <SelectBottomSheet.Option value={12}>12개월</SelectBottomSheet.Option>
-        <SelectBottomSheet.Option value={24}>24개월</SelectBottomSheet.Option>
-      </SelectBottomSheet>
+        onChange={value => setSavingStates({ savingTerm: value })}
+      />
 
       <Spacing size={24} />
       <Border height={16} />
@@ -165,5 +161,21 @@ export function SavingsCalculatorPage() {
           <ListRow contents={<ListRow.Texts type="1RowTypeA" top="상품을 선택해주세요." />} />
         ))}
     </>
+  );
+}
+
+interface SavingTermSelectProps
+  extends Omit<React.ComponentProps<typeof SelectBottomSheet>, 'title' | 'onChange' | 'children'> {
+  value?: number | null;
+  onChange?: (value: number) => void;
+}
+
+export function SavingTermSelect({ value, onChange = noop, ...props }: SavingTermSelectProps) {
+  return (
+    <SelectBottomSheet title="저축 기간을 선택해주세요" value={value ?? undefined} onChange={onChange} {...props}>
+      <SelectBottomSheet.Option value={6}>6개월</SelectBottomSheet.Option>
+      <SelectBottomSheet.Option value={12}>12개월</SelectBottomSheet.Option>
+      <SelectBottomSheet.Option value={24}>24개월</SelectBottomSheet.Option>
+    </SelectBottomSheet>
   );
 }

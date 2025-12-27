@@ -1,16 +1,7 @@
+import { AmountInput } from 'components/AmountInput';
 import ProductsList from 'domain/savings/components/ProductsList';
 import { Suspense, useState } from 'react';
-import {
-  Border,
-  colors,
-  ListHeader,
-  ListRow,
-  NavigationBar,
-  SelectBottomSheet,
-  Spacing,
-  Tab,
-  TextField,
-} from 'tosslib';
+import { Border, colors, ListHeader, ListRow, NavigationBar, SelectBottomSheet, Spacing, Tab } from 'tosslib';
 import { SavingsProduct } from 'types/savings';
 import { formatKrNumber } from 'utils/formatKrNumbers';
 
@@ -33,12 +24,16 @@ const useView = () => {
 
 const useSavingStates = () => {
   const [filters, setFilters] = useState({
-    targetAmount: '',
-    monthlyAmount: '',
+    targetAmount: null as number | null,
+    monthlyAmount: null as number | null,
     savingTerm: 12,
   });
 
-  return [filters, setFilters] as const;
+  const setSavingStates = (updates: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...updates }));
+  };
+
+  return [filters, setSavingStates] as const;
 };
 
 function filteredByAmount(product: SavingsProduct, amount: number) {
@@ -54,47 +49,31 @@ export function SavingsCalculatorPage() {
   const [view, setView] = useView();
   const [{ targetAmount, monthlyAmount, savingTerm }, setSavingStates] = useSavingStates();
 
-  const handleTargetAmountChange = (value: string) => {
-    const numericValue = value.replace(/[^0-9]/g, '');
-    setSavingStates(prev => ({ ...prev, targetAmount: numericValue }));
-  };
-
-  const handleMonthlyAmountChange = (value: string) => {
-    const numericValue = value.replace(/[^0-9]/g, '');
-    setSavingStates(prev => ({ ...prev, monthlyAmount: numericValue }));
-  };
-
-  const handleSavingTermChange = (value: number) => {
-    setSavingStates(prev => ({ ...prev, savingTerm: value }));
-  };
-
   return (
     <>
       <NavigationBar title="적금 계산기" />
 
       <Spacing size={16} />
 
-      <TextField
+      <AmountInput
         label="목표 금액"
         placeholder="목표 금액을 입력하세요"
-        suffix="원"
         value={targetAmount}
-        onChange={e => handleTargetAmountChange(e.target.value)}
+        onChange={value => setSavingStates({ targetAmount: value })}
       />
       <Spacing size={16} />
-      <TextField
+      <AmountInput
         label="월 납입액"
         placeholder="희망 월 납입액을 입력하세요"
-        suffix="원"
         value={monthlyAmount}
-        onChange={e => handleMonthlyAmountChange(e.target.value)}
+        onChange={value => setSavingStates({ monthlyAmount: value })}
       />
       <Spacing size={16} />
       <SelectBottomSheet
         label="저축 기간"
         title="저축 기간을 선택해주세요"
         value={savingTerm}
-        onChange={value => handleSavingTermChange(Number(value))}
+        onChange={value => setSavingStates({ savingTerm: Number(value) })}
       >
         <SelectBottomSheet.Option value={6}>6개월</SelectBottomSheet.Option>
         <SelectBottomSheet.Option value={12}>12개월</SelectBottomSheet.Option>

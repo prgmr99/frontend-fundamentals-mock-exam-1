@@ -1,10 +1,11 @@
 import { noop } from '@tanstack/react-query';
 import { AmountInput } from 'components/AmountInput';
+import CalculateResult from 'domain/savings/components/CalculateResult';
 import ProductsList from 'domain/savings/components/ProductsList';
+import { useSavingStates } from 'domain/savings/hooks/useSavingStates';
+import { filteredByAmount, filteredByTerm, orderByAnnualRate } from 'domain/savings/logics/filters';
 import { Suspense, useState } from 'react';
-import { Border, colors, ListHeader, ListRow, NavigationBar, SelectBottomSheet, Spacing, Tab } from 'tosslib';
-import { SavingsProduct } from 'types/savings';
-import { formatKrNumber } from 'utils/formatKrNumbers';
+import { Border, ListHeader, NavigationBar, SelectBottomSheet, Spacing, Tab } from 'tosslib';
 
 type TabValue = 'products' | 'results';
 
@@ -23,30 +24,7 @@ const useView = () => {
   return [view, setView] as const;
 };
 
-const useSavingStates = () => {
-  const [filters, setFilters] = useState({
-    targetAmount: null as number | null,
-    monthlyAmount: null as number | null,
-    savingTerm: 12,
-  });
-
-  const setSavingStates = (updates: Partial<typeof filters>) => {
-    setFilters(prev => ({ ...prev, ...updates }));
-  };
-
-  return [filters, setSavingStates] as const;
-};
-
-function filteredByAmount(product: SavingsProduct, amount: number) {
-  return amount >= product.minMonthlyAmount && amount <= product.maxMonthlyAmount;
-}
-
-function filteredByTerm(product: SavingsProduct, term: number) {
-  return product.availableTerms === term;
-}
-
 export function SavingsCalculatorPage() {
-  // === UI 상태 ===
   const [view, setView] = useView();
   const [{ targetAmount, monthlyAmount, savingTerm }, setSavingStates] = useSavingStates();
 
@@ -99,67 +77,25 @@ export function SavingsCalculatorPage() {
       ) : null}
 
       {/* === 계산 결과 탭 === */}
-      {view === 'results' &&
-        (selectedProductId ? (
-          <>
-            <Spacing size={8} />
-
-            <ListRow
-              contents={
-                <ListRow.Texts
-                  type="2RowTypeA"
-                  top="예상 수익 금액"
-                  topProps={{ color: colors.grey600 }}
-                  bottom={`${calculatedResults ? formatKrNumber(Math.floor(calculatedResults.finalAmount)) : 0}원`}
-                  bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
-                />
-              }
+      {view === 'results' ? (
+        <>
+          <Spacing size={8} />
+          <CalculateResult />
+          <Spacing size={8} />
+          <Border height={16} />
+          <Spacing size={8} />
+          <ListHeader title={<ListHeader.TitleParagraph fontWeight="bold">추천 상품 목록</ListHeader.TitleParagraph>} />
+          <Spacing size={12} />
+          <Suspense fallback={<ProductsList.Loading />}>
+            <ProductsList
+              filters={[x => filteredByAmount(x, Number(monthlyAmount)), x => filteredByTerm(x, savingTerm)]}
+              orderBy={orderByAnnualRate}
+              limit={2}
             />
-            <ListRow
-              contents={
-                <ListRow.Texts
-                  type="2RowTypeA"
-                  top="목표 금액과의 차이"
-                  topProps={{ color: colors.grey600 }}
-                  bottom={`${calculatedResults ? formatKrNumber(Math.floor(calculatedResults.goalDifference)) : 0}원`}
-                  bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
-                />
-              }
-            />
-            <ListRow
-              contents={
-                <ListRow.Texts
-                  type="2RowTypeA"
-                  top="추천 월 납입 금액"
-                  topProps={{ color: colors.grey600 }}
-                  bottom={`${calculatedResults ? formatKrNumber(calculatedResults.recommendedMonthlyAmount) : 0}원`}
-                  bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
-                />
-              }
-            />
-
-            <Spacing size={8} />
-            <Border height={16} />
-            <Spacing size={8} />
-
-            <ListHeader
-              title={<ListHeader.TitleParagraph fontWeight="bold">추천 상품 목록</ListHeader.TitleParagraph>}
-            />
-            <Spacing size={12} />
-
-            <Suspense fallback={<ProductsList.Loading />}>
-              <ProductsList
-                filters={[x => filteredByAmount(x, Number(monthlyAmount)), x => filteredByTerm(x, savingTerm)]}
-                orderBy={}
-                limit={2}
-              />
-            </Suspense>
-
-            <Spacing size={40} />
-          </>
-        ) : (
-          <ListRow contents={<ListRow.Texts type="1RowTypeA" top="상품을 선택해주세요." />} />
-        ))}
+          </Suspense>
+          <Spacing size={40} />
+        </>
+      ) : null}
     </>
   );
 }

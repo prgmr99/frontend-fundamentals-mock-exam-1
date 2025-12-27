@@ -5,18 +5,13 @@ import { FilteredSavingProducts, OrderBySavingProducts, SavingsProduct } from 't
 import { formatKrNumber } from 'utils/formatKrNumbers';
 
 import { getSavingProductsQueryOptions } from '../queries/getSavingProductsQueryOptions';
-import { useState } from 'react';
+
+import { useProductSelection } from '../hooks/useProductSelection';
 
 interface ProductsListProps {
   filters?: FilteredSavingProducts[];
   orderBy?: OrderBySavingProducts;
   limit?: number;
-}
-
-function useProductSelection() {
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-
-  return [selectedProductId, setSelectedProductId] as const;
 }
 
 export default function ProductsList({ filters, orderBy, limit = Infinity }: ProductsListProps) {

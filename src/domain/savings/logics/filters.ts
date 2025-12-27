@@ -1,35 +1,20 @@
-import { SavingsGoal, SavingsProduct } from 'types/savings';
+import { SavingsProduct } from 'types/savings';
 
-export interface ProductFilter {
-  (product: SavingsProduct, goal: SavingsGoal): boolean;
+export function filteredByAmount(product: SavingsProduct, amount: number) {
+  return amount >= product.minMonthlyAmount && amount <= product.maxMonthlyAmount;
 }
 
-export const monthlyAmountFilter: ProductFilter = (product, goal) => {
-  if (!goal.monthlyAmount) {
+export function filteredByTerm(product: SavingsProduct, term: number) {
+  return product.availableTerms === term;
+}
+
+export function orderByAnnualRate(a: SavingsProduct, b: SavingsProduct) {
+  return b.annualRate - a.annualRate;
+}
+
+export function filteredByProductId(product: SavingsProduct, productId: string | null) {
+  if (!productId) {
     return true;
   }
-
-  return goal.monthlyAmount >= product.minMonthlyAmount && goal.monthlyAmount <= product.maxMonthlyAmount;
-};
-
-export const savingPeriodFilter: ProductFilter = (product, goal) => {
-  return product.availableTerms === goal.savingPeriod;
-};
-
-export const composeFilters =
-  (...filters: ProductFilter[]): ProductFilter =>
-  (product, goal) =>
-    filters.every(filter => filter(product, goal));
-
-export const filterProducts = (
-  products: SavingsProduct[],
-  goal: SavingsGoal,
-  filters: ProductFilter[] = [monthlyAmountFilter, savingPeriodFilter]
-): SavingsProduct[] => {
-  const composedFilter = composeFilters(...filters);
-  return products.filter(product => composedFilter(product, goal));
-};
-
-export const getRecommendedProducts = (products: SavingsProduct[], count: number = 2): SavingsProduct[] => {
-  return [...products].sort((a, b) => b.annualRate - a.annualRate).slice(0, count);
-};
+  return product.id === productId;
+}

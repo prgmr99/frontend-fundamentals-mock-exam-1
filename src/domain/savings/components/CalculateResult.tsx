@@ -1,6 +1,5 @@
 import { colors, ListRow } from 'tosslib';
 import { formatKrNumber } from 'utils/formatKrNumbers';
-import { useSavingStates } from '../hooks/useSavingStates';
 import { Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { getSavingProductsQueryOptions } from '../queries/getSavingProductsQueryOptions';
@@ -8,19 +7,23 @@ import { useProductSelection } from '../hooks/useProductSelection';
 import { filteredByProductId } from '../logics/filters';
 import { calculateSavingsResult } from '../logics/calculator';
 
-export default function CalculateResult() {
+interface CalculateResultProps {
+  targetAmount?: number | null;
+  monthlyAmount?: number | null;
+  savingTerm?: number;
+}
+
+export default function CalculateResult(props: CalculateResultProps) {
   return (
     <Suspense
       fallback={<ListRow contents={<ListRow.Texts type="1RowTypeA" top="계산 결과를 불러오는 중입니다..." />} />}
     >
-      <CalculateResult.Content />
+      <CalculateResult.Content {...props} />
     </Suspense>
   );
 }
 
-CalculateResult.Content = function Content() {
-  const [{ targetAmount, monthlyAmount, savingTerm }] = useSavingStates();
-
+CalculateResult.Content = function Content({ targetAmount, monthlyAmount, savingTerm }: CalculateResultProps) {
   const [selectedProductId] = useProductSelection();
 
   const { data } = useSuspenseQuery(
@@ -33,7 +36,7 @@ CalculateResult.Content = function Content() {
     return <ListRow contents={<ListRow.Texts type="1RowTypeA" top="선택된 적금 상품이 없습니다." />} />;
   }
 
-  if (targetAmount == null || monthlyAmount == null) {
+  if (targetAmount == null || monthlyAmount == null || savingTerm == null) {
     return <ListRow contents={<ListRow.Texts type="1RowTypeA" top="목표 금액과 월 납입액을 입력해주세요." />} />;
   }
 

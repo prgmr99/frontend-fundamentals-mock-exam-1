@@ -80,7 +80,7 @@ export function SavingsCalculatorPage() {
       {view === 'results' ? (
         <>
           <Spacing size={8} />
-          <CalculateResult />
+          <CalculateResult targetAmount={targetAmount} monthlyAmount={monthlyAmount} savingTerm={savingTerm} />
           <Spacing size={8} />
           <Border height={16} />
           <Spacing size={8} />

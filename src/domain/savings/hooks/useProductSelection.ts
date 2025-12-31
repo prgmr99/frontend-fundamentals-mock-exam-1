@@ -1,7 +1,5 @@
-import { useState } from 'react';
+import { parseAsString, useQueryState } from 'nuqs';
 
 export function useProductSelection() {
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-
-  return [selectedProductId, setSelectedProductId] as const;
+  return useQueryState('productId', parseAsString);
 }

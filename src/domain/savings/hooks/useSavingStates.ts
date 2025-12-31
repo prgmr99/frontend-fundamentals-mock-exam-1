@@ -1,15 +1,9 @@
-import { useState } from 'react';
+import { useQueryStates, parseAsInteger } from 'nuqs';
 
 export const useSavingStates = () => {
-  const [filters, setFilters] = useState({
-    targetAmount: null as number | null,
-    monthlyAmount: null as number | null,
-    savingTerm: 12,
+  return useQueryStates({
+    targetAmount: parseAsInteger,
+    monthlyAmount: parseAsInteger,
+    savingTerm: parseAsInteger,
   });
-
-  const setSavingStates = (updates: Partial<typeof filters>) => {
-    setFilters(prev => ({ ...prev, ...updates }));
-  };
-
-  return [filters, setSavingStates] as const;
 };

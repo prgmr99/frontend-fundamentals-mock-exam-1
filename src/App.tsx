@@ -1,4 +1,5 @@
 import { GlobalPortal, GlobalStyles } from 'tosslib';
+import { NuqsAdapter } from 'nuqs/adapters/react-router';
 import { Routes } from './pages/Routes';
 
 export function App() {
@@ -6,7 +7,9 @@ export function App() {
     <>
       <GlobalStyles />
       <GlobalPortal.Provider>
-        <Routes />
+        <NuqsAdapter>
+          <Routes />
+        </NuqsAdapter>
       </GlobalPortal.Provider>
     </>
   );

@@ -6,25 +6,21 @@ import { getSavingProductsQueryOptions } from '../queries/getSavingProductsQuery
 import { useProductSelection } from '../hooks/useProductSelection';
 import { filteredByProductId } from '../logics/filters';
 import { calculateSavingsResult } from '../logics/calculator';
+import { useSavingStates } from '../hooks/useSavingStates';
 
-interface CalculateResultProps {
-  targetAmount?: number | null;
-  monthlyAmount?: number | null;
-  savingTerm?: number;
-}
-
-export default function CalculateResult(props: CalculateResultProps) {
+export default function CalculateResult() {
   return (
     <Suspense
       fallback={<ListRow contents={<ListRow.Texts type="1RowTypeA" top="계산 결과를 불러오는 중입니다..." />} />}
     >
-      <CalculateResult.Content {...props} />
+      <CalculateResult.Content />
     </Suspense>
   );
 }
 
-CalculateResult.Content = function Content({ targetAmount, monthlyAmount, savingTerm }: CalculateResultProps) {
+CalculateResult.Content = function Content() {
   const [selectedProductId] = useProductSelection();
+  const [{ targetAmount, monthlyAmount, savingTerm }] = useSavingStates();
 
   const { data } = useSuspenseQuery(
     getSavingProductsQueryOptions({ filters: [x => filteredByProductId(x, selectedProductId)] })
